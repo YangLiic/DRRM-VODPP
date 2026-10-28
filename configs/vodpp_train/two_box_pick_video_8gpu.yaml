@@ -1,0 +1,20 @@
+defaults:
+  - policy_config/dit_fm
+  - observation_config/dinov3cnnl_3v
+  - robot_config/drobotics_3v
+  - dataset_config/drobotics_dataset_video
+  - _self_
+
+train_dataset:
+  root: /DRoboticsAILab/users/licheng.yang/datasets/D-Robotics/two_boxL
+  repo_id: D-Robotics/two_boxL
+  dataset_metadata:
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}
+
+num_train_epochs: 300
+train_batch_size: 256
+dataloader_num_workers: 128
+
+base_dir: /DRoboticsAILab/users/licheng.yang/checkpoints/two_boxL
+output_dir: ${base_dir}

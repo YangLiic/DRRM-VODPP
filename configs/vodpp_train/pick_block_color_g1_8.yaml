@@ -1,0 +1,95 @@
+defaults:
+  - policy_config/dit_fm
+  - observation_config/dinov3cnnl_3v
+  - _self_
+
+image_shape: [3, 240, 320]
+shape_meta:
+  obs:
+    left_cam:
+      shape: ${image_shape}
+      type: rgb
+    right_cam:
+      shape: ${image_shape}
+      type: rgb
+    head_cam:
+      shape: ${image_shape}
+      type: rgb
+    state:
+      shape: [20]
+      type: low_dim
+  action:
+    state:
+      shape: [20]
+
+n_obs_steps: 1
+obs_image_frame_indices: ${eval:'ListConfig(list(range(${n_obs_steps})))'}
+n_action_steps: ${eval:'${horizon}-${n_obs_steps}'}
+
+num_train_epochs: 100
+
+base_dir: /DRoboticsAILab/users/licheng.yang/checkpoints/pick_block_color_g1_8
+output_dir: ${base_dir}
+
+model:
+  shape_meta: ${shape_meta}
+  action_key: state
+  obs_encoder:
+    rgb_key: ["left_cam", "right_cam", "head_cam"]
+    state_key: null
+    emvis_config:
+      processor_config:
+        do_resize: false
+
+train_dataset:
+  _target_: drrm.datasets.drobotics_pick_block_dataset.DRoboticsPickBlockDataset
+  root: /DRoboticsAILab/users/licheng.yang/datasets/D-Robotics/pick_block_color_g1
+  repo_id: D-Robotics/pick_block_color_g1
+  task: pick block color
+  demo: null
+  task_list:
+    - ${train_dataset.task}
+  horizon: ${horizon}
+  obs_image_frame_indices: ${obs_image_frame_indices}
+  pad_before: ${n_obs_steps}
+  pad_after: 3
+  rgb_key:
+    - observation.images.hand_left
+    - observation.images.hand_right
+    - observation.images.top_head
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: ${train_dataset.demo}
+  npy_feature_keys: null
+  action_source_key: action
+  video_backend: pyav
+  action_state_indices:
+    - 0
+    - 1
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+  image_key_map:
+    observation.images.hand_left: left_cam
+    observation.images.hand_right: right_cam
+    observation.images.top_head: head_cam
+  image_resize_hw: [240, 320]
+  dataset_metadata:
+    _target_: lerobot.datasets.lerobot_dataset.LeRobotDatasetMetadata
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}

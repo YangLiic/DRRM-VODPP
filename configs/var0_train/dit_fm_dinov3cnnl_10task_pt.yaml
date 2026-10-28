@@ -1,0 +1,38 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+checkpointing_period: 100000
+
+
+output_dir: ${base_dir}_dinov3cnnl_10task_pt
+
+lr_scheduler:
+  name: "constant_with_warmup"
+  warmup_ratio: 0.05
+
+model:
+  pretraining: true
+  sigreg:
+    knots: 17
+    num_proj: 1024
+  loss_weights:
+    emb_sta: 1.0
+    emb_vis: 1.0
+    sta: 1.0
+    act: 1.0
+    sigreg: 0.09
+
+train_dataset:
+  task_list: [
+    place_a2b_left,
+    stack_blocks_two,
+    open_laptop,
+    move_stapler_pad,
+    press_stapler,
+    adjust_bottle,
+    click_bell,
+    place_can_basket,
+    place_fan,
+    place_phone_stand
+  ]

@@ -1,0 +1,23 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_BC_delta_eef
+
+model:
+  action_decoder:
+    type: transformer
+    action_dim: ${shape_meta.obs.endpose.shape[0]}
+    hidden_size: 1024
+    input_dim: ${model.state_encoder.output_dim}
+    num_embodiments: ${model.state_encoder.num_embodiments}
+    num_heads: 32
+    horizon: ${horizon}
+    depth: 2
+  action_key: del_endpose
+  loss_weights:
+    emb_sta: 0.0
+    emb_vis: 0.0
+    sta: 0.0
+    act: 1.0
+    sigreg: 0.0

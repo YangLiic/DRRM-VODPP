@@ -1,0 +1,22 @@
+# Basic experiment configuration
+policy_name: pi05
+task_name: null
+task_config: null
+ckpt_setting: null
+seed: 0
+instruction_type: unseen
+
+# OpenPI websocket server
+host: 127.0.0.1
+port: 8000
+# Steps to execute per infer before re-planning.
+# auto / horizon: use full action_horizon from the loaded weights (server actions.shape[0]).
+# int (e.g. 8): truncate open-loop chunk to that many steps.
+replan_steps: auto
+# train_short: LeRobot task string; env: RoboTwin-generated instruction
+prompt_mode: train_short
+
+# Result root (overridden by eval.sh / EVAL_RESULT_ROOT)
+eval_result_root: /DRoboticsAILab/users/licheng.yang/robotwin2.0/result
+# Number of evaluation episodes
+test_num: 100

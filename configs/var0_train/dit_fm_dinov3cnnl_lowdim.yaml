@@ -1,0 +1,15 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_lowdim
+num_train_epochs: 600
+model:
+  state_encoder:
+    hidden_size: 512
+    output_dim: 128
+    num_embodiments: 1
+  state_decoder:
+    hidden_size: 512
+  action_decoder:
+    hidden_size: 512

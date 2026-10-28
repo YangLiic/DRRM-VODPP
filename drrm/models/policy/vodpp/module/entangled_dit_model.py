@@ -1,0 +1,134 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+# --------------------------------------------------------
+# References:
+# DiT: https://github.com/facebookresearch/DiT
+# GLIDE: https://github.com/openai/glide-text2im
+# MAE: https://github.com/facebookresearch/mae/blob/main/models_mae.py
+# --------------------------------------------------------
+from collections import OrderedDict
+
+import torch
+import torch.nn as nn
+
+from .blocks import (
+    FinalLayer, Block, TimestepEmbedder, EntangledBlock, 
+    get_1d_sincos_pos_embed_from_grid, get_multimodal_cond_pos_embed
+)
+
+
+class EntangledDiT(nn.Module):
+    """
+    Class for Robotics Diffusion Transformers.
+    """
+    def __init__(
+        self,
+        horizon: int,
+        hidden_size=1152,
+        depth=28,
+        num_heads=16,
+        cond_len=4096, # S * V * P
+        cond_pos_embed_config=None, # S, V, P
+        dtype=torch.bfloat16,
+        timestep_mode: str = "concat"
+    ):
+        super().__init__()
+        self.horizon = horizon
+        self.hidden_size = hidden_size
+        self.cond_len = cond_len
+        self.dtype = dtype
+        self.cond_pos_embed_config = cond_pos_embed_config
+        if timestep_mode not in {"concat", "adaln", "concat_adaln"}:
+            raise ValueError(
+                "timestep_mode must be one of 'concat', 'adaln', or 'concat_adaln'"
+            )
+        self.timestep_mode = timestep_mode
+        self.use_timestep_concat = timestep_mode in {"concat", "concat_adaln"}
+        self.use_timestep_adaln = timestep_mode in {"adaln", "concat_adaln"}
+
+        self.t_embedder = TimestepEmbedder(hidden_size, dtype=dtype)
+        
+        # We will use trainable sin-cos embeddings
+        # [timestep; state; action] when concat is enabled, otherwise [action]
+        x_pos_len = horizon + int(self.use_timestep_concat)
+        self.x_pos_embed = nn.Parameter(
+            torch.zeros(1, x_pos_len, hidden_size)
+        )
+        # Image conditions
+        self.cond_pos_embed = nn.Parameter(
+            torch.zeros(1, cond_len, hidden_size)
+        )
+        
+        self.blocks = nn.ModuleList([
+            EntangledBlock(hidden_size, num_heads, use_adaln=self.use_timestep_adaln)
+            for _ in range(depth)
+        ])
+        self.initialize_weights()
+
+    def initialize_weights(self):
+        # Initialize transformer layers:
+        def _basic_init(module):
+            if isinstance(module, nn.Linear):
+                torch.nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+        self.apply(_basic_init)
+
+        # Initialize pos_embed by sin-cos embedding
+        x_pos_embed_config = OrderedDict()
+        if self.use_timestep_concat:
+            x_pos_embed_config['timestep'] = 1
+        x_pos_embed_config['action'] = self.horizon
+        x_pos_embed = get_multimodal_cond_pos_embed(
+            embed_dim=self.hidden_size,
+            mm_cond_lens=x_pos_embed_config
+        )
+        self.x_pos_embed.data.copy_(torch.from_numpy(x_pos_embed).float().unsqueeze(0))
+
+        cond_pos_embed = get_multimodal_cond_pos_embed(
+            embed_dim=self.hidden_size,
+            mm_cond_lens=OrderedDict(self.cond_pos_embed_config),
+            embed_modality=False
+        )
+        self.cond_pos_embed.data.copy_(
+            torch.from_numpy(cond_pos_embed).float().unsqueeze(0))
+
+        # Initialize timestep embedding MLP
+        nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
+        nn.init.normal_(self.t_embedder.mlp[2].weight, std=0.02)
+        
+        # Move all the params to given data type:
+        self.to(self.dtype)
+
+    def forward(self, x, t, cond):
+        """
+        Forward pass of RDT.
+        
+        x: (B, T, D), state + action token sequence, T = horizon + 1,
+            dimension D is assumed to be the same as the hidden size.
+        t: (B,) or (1,), diffusion timesteps.
+        cond: (B, cond_len, D), multimodal conditions
+        """
+        temb = self.t_embedder(t) # (B, D) or (1, D)
+        if temb.shape[0] == 1:
+            temb = temb.expand(x.shape[0], -1)
+        # Append timestep to the input tokens when using concat modes
+        if self.use_timestep_concat:
+            x = torch.cat([temb.unsqueeze(1), x], dim=1) # (B, T+1, D)
+        
+        # Add multimodal position embeddings
+        x = x + self.x_pos_embed
+        # Note the lang is of variable length
+        y = cond + self.cond_pos_embed
+        c = y
+
+        # Forward pass
+        for i, block in enumerate(self.blocks):
+            x, y = block(x, y, c, temb=temb)
+
+        # Only preserve the action tokens
+        x = x[:, -self.horizon:]
+        return x, y

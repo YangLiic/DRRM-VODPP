@@ -1,0 +1,58 @@
+# --------------------------- evaluator config
+# trainer function
+_target_: drrm.trainer.eval.eval
+
+mixed_precision: "bf16" 
+seed: 42
+val_batch_size: 64
+dataloader_num_workers: 4
+framework: "var0"
+
+# ------------------------------- model config
+image_shape: [3, 240, 320]
+shape_meta:
+  obs:
+    head_cam:
+      shape: ${image_shape}
+      type: rgb
+    front_cam:
+      shape: ${image_shape}
+      type: rgb
+    agent_pos:
+      shape: [14]
+      type: low_dim
+    endpose:
+      shape: [16]
+      type: low_dim
+  action:
+    shape: [14]
+    type: low_dim
+
+horizon: 8
+n_obs_steps: 1
+n_action_steps: 7
+
+# ------------------------------- dataset config
+task_name: null
+expert_data_num: null
+ckpt_setting: null
+checkpoint_num: null
+
+train_dataset:
+  path: datasets
+  _target_: drrm.datasets.drrm_dataset.DRRMDataset
+  root: datasets/drrm_robotwin2.0_D435_Agilex_200_rgb
+  repo_id: D-robotics/drrm_robotwin2.0_D435_Agilex_200_rgb
+  task_list:
+    - ${task_name}
+  detail_item: True
+  horizon: ${eval:'${horizon}+1'}
+  pad_before: 3
+  pad_after: 3
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: 100
+  dataset_metadata:
+    _target_: lerobot.datasets.lerobot_dataset.LeRobotDatasetMetadata
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}

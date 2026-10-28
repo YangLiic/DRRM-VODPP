@@ -1,0 +1,44 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_lowdimdit_aw
+num_train_epochs: 600
+model:
+  state_encoder:
+    hidden_size: 512
+    output_dim: 128
+    num_embodiments: 1
+  state_decoder:
+    type: transformer
+    hidden_size: 512
+
+    num_heads: 32
+    horizon: ${horizon}
+    depth: 2
+  action_decoder:
+    type: transformer
+    hidden_size: 512
+
+    num_heads: 32
+    horizon: ${horizon}
+    depth: 2
+  loss_weights:
+    # 核心生成任务 (Primary Generative Task)
+    emb_sta: 1.0      # 核心 Flow Matching 速度(Velocity)匹配 loss，保持 1.0 以稳固生成基础
+    act: 5.0          # (最重要) 最终的动作预测损失。因为我们最终评估的是动作，应该赋予最高的关注度
+    
+    # 辅助策略任务 (Auxiliary Policy Task)
+    sta: 2.0          # 未来状态(Endpose等)预测损失。可以作为 action 的强约束，权重略低于 / 等于 act
+
+    # 辅助表征任务 (Representation tasks) 
+    # 这部分任务很容易过拟合或产生过大的梯度，建议压低
+    rec_sta: 0.1      # State Encoder->Decoder 的自编码重构。只需极小权重(0.1~0.5)保证隐空间不塌缩即可
+    emb_vis: 0.1      # 预测视觉特征的损失。视觉特征维度高、Loss本身容易浮高，建议降低到 0.1 防止干扰主干
+
+    # 正则化 (Regularization)
+    sigreg: 0.1       # 0.25 可能略显激进。如果发现模型不够多样可以上调，但 0.1 通常是一个安全的正则化起步点
+
+train_dataset:
+  task_list:
+    - ${train_dataset.task}

@@ -1,0 +1,55 @@
+defaults:
+  - policy_config/dit_fm
+  - observation_config/dinov3cnnl_2v
+  - robot_config/drobotics_3v
+  - dataset_config/drobotics_dataset_video
+  - _self_
+
+# ── Single-arm, 2-camera override (right wrist + head, 7-DoF) ───────────────
+# Overrides drobotics_3v: remove left_cam, shrink state/action to 7-DoF.
+shape_meta:
+  obs:
+    right_cam:
+      shape: ${image_shape}
+      type: rgb
+    head_cam:
+      shape: ${image_shape}
+      type: rgb
+    state:
+      shape: [7]
+      type: low_dim
+  action:
+    state:
+      shape: [7]
+
+# Overrides dinov3cnnl_3v: use only right_cam + head_cam, 2-view fuser.
+model:
+  shape_meta: ${shape_meta}
+  obs_encoder:
+    rgb_key: ["right_cam", "head_cam"]
+    emvis_config:
+      mv_fuser_config:
+        num_views: 2
+
+# ── Dataset ──────────────────────────────────────────────────────────────────
+train_dataset:
+  root: /DRoboticsAILab/users/licheng.yang/datasets/D-Robotics/five_box
+  repo_id: D-Robotics/five_box
+  dataset_metadata:
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}
+  rgb_key:
+    - observation.images.right_wrist_camera
+    - observation.images.head_camera
+  image_key_map:
+    observation.images.right_wrist_camera: right_cam
+    observation.images.head_camera: head_cam
+  # right_arm.joint1–6 (7,8,9,10,11,12) + right_arm.gripper (13)
+  state_indices: [7, 8, 9, 10, 11, 12, 13]
+
+num_train_epochs: 200
+train_batch_size: 256
+dataloader_num_workers: 128
+
+base_dir: /DRoboticsAILab/users/licheng.yang/checkpoints/five_box
+output_dir: ${base_dir}

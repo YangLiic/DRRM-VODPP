@@ -1,0 +1,37 @@
+# @package _global_
+model:
+  obs_encoder:
+    state_key: null
+    rgb_key: ["head_cam", "front_cam"]
+    emvis_config:
+      processor_config:
+        load_pretrain: true
+      dim_2d: 1536
+      # dim_3d_keys: ['frame', 'global']
+      # load_vggt_heads: true
+      load_vggt_pretrain: true
+      only_2d: true
+      vggt_target: 'dinov3cnn'
+      vggt_model_path: pretrained/dinov3-cnnl
+      vggt_config: {}
+      # interpolate: 'bilinear'
+      mlp_ratio: 1.0
+      drop_p: 0.0
+      ft_heads: []
+      ft_layer_idx: []
+      # intermediate_layer_idx: [23]
+      seq_as_view: False
+      only_first_view: False
+      injector_config: {}
+      model_adapter_config:
+        target: ResNetAdapter
+        shape_out: [2, 2]
+        dim_out: 1024
+        conv_num: 3 # TODO: dinov3cnn 情况下用2层conv，dinov3vit用3层
+      mv_fuser_config:
+        depth: 1
+        num_heads: 24   ##dinov3cnn
+        mlp_ratio: 2.0
+        drop_p: 0.0
+        use_view_embed: true
+        num_views: 3

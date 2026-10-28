@@ -1,0 +1,29 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_lowdim_dit
+num_train_epochs: 600
+model:
+  state_encoder:
+    hidden_size: 512
+    output_dim: 128
+    num_embodiments: 1
+  state_decoder:
+    type: transformer
+    hidden_size: 512
+
+    num_heads: 32
+    horizon: ${horizon}
+    depth: 2
+  action_decoder:
+    type: transformer
+    hidden_size: 512
+
+    num_heads: 32
+    horizon: ${horizon}
+    depth: 2
+
+train_dataset:
+  task_list:
+    - ${train_dataset.task}

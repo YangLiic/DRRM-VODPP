@@ -1,0 +1,90 @@
+defaults:
+  - dit_fm
+  - _self_
+
+checkpointing_period: 100000
+
+n_obs_steps: 1
+shape_meta:
+  obs:
+    head_cam:
+      shape: ${image_shape}
+      type: rgb
+    front_cam:
+      shape: ${image_shape}
+      type: rgb
+    agent_pos:
+      shape: [14]
+      type: low_dim
+    endpose:
+      shape: [16]
+      type: low_dim
+      
+mixed_precision: "bf16"
+output_dir: ${base_dir}_dinov3cnnl
+
+model:
+  pretraining: False
+  vis_encoder:
+    # rgb_key: ["head_cam", "front_cam"]
+    emvis_config:
+      processor_config: {}
+      dim_2d: 1536
+      # dim_3d_keys: ['frame', 'global']
+      # load_vggt_heads: true
+      load_vggt_pretrain: true
+      only_2d: true
+      vggt_target: 'dinov3cnn'
+      vggt_model_path: pretrained/dinov3-cnnl
+      vggt_config: {}
+      # interpolate: 'bilinear'
+      mlp_ratio: 1.0
+      drop_p: 0.0
+      ft_heads: []
+      ft_layer_idx: []
+      # intermediate_layer_idx: [23]
+      seq_as_view: False
+      only_first_view: True
+      injector_config: {}
+      model_adapter_config:
+        target: ResNetAdapter
+        shape_out: [3, 3]
+        dim_out: 1024
+        conv_num: 3
+      mv_fuser_config: {}
+  state_encoder:
+    action_dim: ${shape_meta.obs.endpose.shape[0]}
+    hidden_size: 1024
+    output_dim: 512
+    num_embodiments: 1
+  state_decoder:
+    action_dim: ${shape_meta.obs.endpose.shape[0]}
+    hidden_size: 1024
+    input_dim: ${model.state_encoder.output_dim}
+    num_embodiments: ${model.state_encoder.num_embodiments}
+  action_decoder:
+    action_dim: ${shape_meta.action.shape[0]}
+    hidden_size: 1024
+    input_dim: ${model.state_encoder.output_dim}
+    num_embodiments: ${model.state_encoder.num_embodiments}
+
+    # num_heads: 32
+    # horizon: ${horizon}
+    # depth: 2
+  sigreg:
+    knots: 17
+    num_proj: 1024
+  loss_weights:
+    emb_sta: 1.0
+    emb_vis: 1.0
+    sta: 1.0
+    rec_sta: 1.0
+    act: 1.0
+    sigreg: 0.25
+
+train_dataset:
+  _target_: drrm.datasets.drrm_dataset.DRRMDataset
+  root: datasets/drrm_robotwin2.0_D435_Agilex_200_rgb
+  repo_id: D-robotics/drrm_robotwin2.0_D435_Agilex_200_rgb
+  task_list:
+    - ${train_dataset.task}

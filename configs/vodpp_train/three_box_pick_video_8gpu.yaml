@@ -1,0 +1,20 @@
+defaults:
+  - policy_config/dit_fm
+  - observation_config/dinov3cnnl_3v
+  - robot_config/drobotics_3v
+  - dataset_config/drobotics_dataset_video
+  - _self_
+
+train_dataset:
+  root: /DRoboticsAILab/users/licheng.yang/datasets/D-Robotics/three_box_v2
+  repo_id: D-Robotics/three_box_v2
+  dataset_metadata:
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}
+
+num_train_epochs: 200
+train_batch_size: 128
+dataloader_num_workers: 64
+
+base_dir: /DRoboticsAILab/users/licheng.yang/checkpoints/three_box_pick_8gpu_200epochs
+output_dir: ${base_dir}

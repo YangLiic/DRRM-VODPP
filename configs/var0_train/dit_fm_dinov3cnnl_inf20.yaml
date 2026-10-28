@@ -1,0 +1,9 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_inf20
+
+model:
+  noise_scheduler:
+    num_inference_timesteps: 20

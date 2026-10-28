@@ -1,0 +1,66 @@
+defaults:
+  - policy_config/dit_fm
+  - observation_config/dinov3cnnl_2v
+  - robot_config/drobotics_3v
+  - dataset_config/drobotics_dataset_video
+  - _self_
+
+# ── Single-arm (left), 2-camera, joint+gripper-effort task ───────────────────
+# Overrides drobotics_3v: remove right_cam, state/action = 7-DoF joints
+# + 1-dim gripper effort (torque) appended by the dataset adapter.
+# The model conditions on the current effort (obs frames) and predicts the
+# future effort trajectory together with the joint action (action frames),
+# i.e. it learns the torque command for each observation.
+shape_meta:
+  obs:
+    left_cam:
+      shape: ${image_shape}
+      type: rgb
+    head_cam:
+      shape: ${image_shape}
+      type: rgb
+    state:
+      shape: [8]
+      type: low_dim
+  action:
+    state:
+      shape: [8]
+
+# Overrides dinov3cnnl_2v: use left_cam + head_cam, 2-view fuser.
+model:
+  shape_meta: ${shape_meta}
+  obs_encoder:
+    rgb_key: ["left_cam", "head_cam"]
+    emvis_config:
+      mv_fuser_config:
+        num_views: 2
+
+# ── Dataset ──────────────────────────────────────────────────────────────────
+train_dataset:
+  root: /DRoboticsAILab/users/licheng.yang/datasets/D-Robotics/pick_force
+  repo_id: D-Robotics/pick_force
+  dataset_metadata:
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}
+  rgb_key:
+    - observation.images.left_wrist_camera
+    - observation.images.head_camera
+  image_key_map:
+    observation.images.left_wrist_camera: left_cam
+    observation.images.head_camera: head_cam
+  # observation.state / action are already left-arm only (7 dims): use all.
+  state_indices: null
+  # Append observation.effort to both obs.state and action.state.
+  # Only dim 6 (left_arm.gripper) carries signal in this dataset;
+  # joint efforts (dims 0-5) are all zero, so they are dropped.
+  extra_source_keys:
+    - observation.effort
+  extra_source_indices:
+    observation.effort: [6]
+
+num_train_epochs: 200
+train_batch_size: 128
+dataloader_num_workers: 64
+
+base_dir: /DRoboticsAILab/users/licheng.yang/checkpoints/pick_force_L4
+output_dir: ${base_dir}

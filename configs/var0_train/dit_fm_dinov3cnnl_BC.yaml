@@ -1,0 +1,13 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_BC
+
+model:
+  loss_weights:
+    emb_sta: 0.0
+    emb_vis: 0.0
+    sta: 0.0
+    act: 1.0
+    sigreg: 0.0

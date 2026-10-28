@@ -1,0 +1,11 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_2v
+
+model:
+  vis_encoder:
+    rgb_key: ["head_cam", "front_cam"]
+    emvis_config:
+      only_first_view: False

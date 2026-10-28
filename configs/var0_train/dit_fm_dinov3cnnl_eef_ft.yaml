@@ -1,0 +1,25 @@
+defaults:
+  - dit_fm_dinov3cnnl
+  - _self_
+
+output_dir: ${base_dir}_dinov3cnnl_eef_ft
+checkpoint_dir: checkpoints/var0/None_None/dit_fm_dinov3cnnl_10task_pt
+model:
+  pretraining: false
+  freeze_keys: 
+    - vis_encoder
+    - state_encoder
+    # - state_decoder
+    - predictor
+  action_decoder:
+    action_dim: ${shape_meta.obs.endpose.shape[0]}
+    hidden_size: 1024
+    input_dim: ${model.state_encoder.output_dim}
+    num_embodiments: ${model.state_encoder.num_embodiments}
+  action_key: endpose
+  loss_weights:
+    emb_sta: 1.0
+    emb_vis: 1.0
+    sta: 1.0
+    act: 1.0
+    sigreg: 0.0

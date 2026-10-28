@@ -1,0 +1,23 @@
+# Basic experiment configuration
+policy_name: gr00t
+task_name: null
+task_config: null
+ckpt_setting: null
+seed: 0
+instruction_type: unseen
+
+# GR00T N1.7 ZMQ server (gr00t.eval.run_gr00t_server)
+host: 127.0.0.1
+port: 5555
+# Steps to execute per infer before re-planning.
+# auto / horizon: use full action_horizon from the loaded weights (32).
+# int (e.g. 8): truncate open-loop chunk to that many steps.
+replan_steps: auto
+# env: RoboTwin-generated instruction (matches 50-task training captions)
+# train_short: task_name with underscores -> spaces, e.g. "adjust bottle"
+prompt_mode: env
+
+# Result root (overridden by eval.sh / EVAL_RESULT_ROOT)
+eval_result_root: /DRoboticsAILab/users/licheng.yang/robotwin2.0/result
+# Number of evaluation episodes
+test_num: 100

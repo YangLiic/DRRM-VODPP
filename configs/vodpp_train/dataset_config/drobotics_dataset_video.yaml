@@ -1,0 +1,39 @@
+# @package _global_
+# D-Robotics dataset (LeRobot video format, 3-view, frames decoded on-the-fly via video_backend).
+# Use this when images are stored as compressed video (.mp4) rather than pre-extracted RGB tensors.
+train_dataset:
+  _target_: drrm.datasets.drobotics_dataset.DRoboticsDataset
+  root: /DRoboticsAILab/users/licheng.yang/datasets/D-Robotics/dual_box_pick_copystate/dual_box_pick_copystate
+  repo_id: D-Robotics/dual_box_pick_copystate/dual_box_pick_copystate
+  task: ""
+  demo: null
+  task_list:
+    - ""
+  horizon: ${horizon}
+  obs_image_frame_indices: ${obs_image_frame_indices}
+  pad_before: ${n_obs_steps}
+  pad_after: 3
+  rgb_key:
+    - observation.images.left_wrist_camera
+    - observation.images.right_wrist_camera
+    - observation.images.head_camera
+  seed: 42
+  val_ratio: 0.02
+  max_train_episodes: ${train_dataset.demo}
+  npy_feature_keys: null
+  state_source_key: observation.state
+  action_source_key: action
+  state_indices: null
+  image_key_map:
+    observation.images.left_wrist_camera: left_cam
+    observation.images.right_wrist_camera: right_cam
+    observation.images.head_camera: head_cam
+  # Video frames are decoded at native resolution then resized to model input (H×W).
+  # Set to null if the video is already encoded at the correct resolution.
+  image_resize_hw: [240, 320]
+  # Video decoding backend: "pyav" (default, fast) or "torchvision".
+  video_backend: pyav
+  dataset_metadata:
+    _target_: lerobot.datasets.lerobot_dataset.LeRobotDatasetMetadata
+    root: ${train_dataset.root}
+    repo_id: ${train_dataset.repo_id}

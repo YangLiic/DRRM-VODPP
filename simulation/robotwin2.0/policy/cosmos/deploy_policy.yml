@@ -1,0 +1,22 @@
+# Cosmos3-Edge x RoboTwin 2.0 (aloha-agilex) evaluation defaults.
+# eval.sh overrides task/seed/host/port on the command line.
+policy_name: cosmos
+task_name: null
+task_config: null
+ckpt_setting: null
+seed: 0
+# The finetune trained on the `seen` instruction pool only (model card).
+instruction_type: seen
+
+# cosmos_robotwin.server websocket endpoint
+host: 127.0.0.1
+port: 8000
+
+# auto / horizon: execute the server's whole chunk (16 actions @ 16 Hz = 1 s).
+# An int truncates the open-loop segment before re-planning.
+replan_steps: auto
+# env: RoboTwin's generated instruction for this episode (what training used).
+prompt_mode: env
+
+eval_result_root: /DRoboticsAILab/users/licheng.yang/robotwin2.0/result
+test_num: 100
